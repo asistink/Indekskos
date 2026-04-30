@@ -1,12 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
-	"fmt"
 
 	"indekskos/internal/models"
 	"indekskos/templates"
@@ -22,8 +23,16 @@ type AdminHandler struct {
 }
 
 func (h *AdminHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, _ := template.ParseFS(templates.FS, "layout/base.html", "admin/login.html")
-	data := map[string]interface{}{"Title": "Admin Login"}
+	tmpl, err := template.ParseFS(templates.FS, "layout/base.html", "admin/login.html")
+	if err != nil {
+		http.Error(w, "Template Error", http.StatusInternalServerError)
+		return
+	}
+	hasError := r.URL.Query().Get("error") != ""
+	data := map[string]interface{}{
+		"Title": "Admin Login",
+		"Error": hasError,
+	}
 	tmpl.ExecuteTemplate(w, "base.html", data)
 }
 
@@ -33,12 +42,14 @@ func (h *AdminHandler) LoginPostHandler(w http.ResponseWriter, r *http.Request) 
 
 	admin, err := models.GetAdminByUsername(h.DB, username)
 	if err != nil {
+		log.Printf("Login error: GetAdminByUsername failed for %s: %v", username, err)
 		http.Redirect(w, r, "/admin/login?error=invalid", http.StatusSeeOther)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(password))
 	if err != nil {
+		log.Printf("Login error: Password mismatch for %s", username)
 		http.Redirect(w, r, "/admin/login?error=invalid", http.StatusSeeOther)
 		return
 	}
@@ -49,14 +60,22 @@ func (h *AdminHandler) LoginPostHandler(w http.ResponseWriter, r *http.Request) 
 		"username": admin.Username,
 		"exp":      time.Now().Add(24 * time.Hour).Unix(),
 	})
-	tokenString, _ := token.SignedString([]byte(secret))
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		log.Printf("Login error: Failed to sign token: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
+	log.Printf("Login success: User %s logged in", username)
+
+	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 	http.SetCookie(w, &http.Cookie{
 		Name:     "admin_session",
 		Value:    tokenString,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   isSecure,
 		SameSite: http.SameSiteLaxMode,
 	})
 
@@ -79,14 +98,22 @@ func (h *AdminHandler) DashboardHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		stats = &models.DashboardStats{}
 	}
-	tmpl, _ := template.ParseFS(templates.FS, "layout/admin_base.html", "admin/dashboard.html")
+	tmpl, err := template.ParseFS(templates.FS, "layout/admin_base.html", "admin/dashboard.html")
+	if err != nil {
+		http.Error(w, "Template Error", http.StatusInternalServerError)
+		return
+	}
 	data := map[string]interface{}{"Title": "Dashboard", "Stats": stats}
 	tmpl.ExecuteTemplate(w, "admin_base.html", data)
 }
 
 func (h *AdminHandler) ListingsHandler(w http.ResponseWriter, r *http.Request) {
 	listings, _ := models.GetAllListingsAdmin(h.DB)
-	tmpl, _ := template.New("listings.html").Funcs(funcMap).ParseFS(templates.FS, "layout/admin_base.html", "admin/listings.html")
+	tmpl, err := template.New("listings.html").Funcs(funcMap).ParseFS(templates.FS, "layout/admin_base.html", "admin/listings.html")
+	if err != nil {
+		http.Error(w, "Template Error", http.StatusInternalServerError)
+		return
+	}
 	data := map[string]interface{}{"Title": "Manage Listings", "Listings": listings}
 	tmpl.ExecuteTemplate(w, "admin_base.html", data)
 }
@@ -138,7 +165,11 @@ func (h *AdminHandler) UpdatePriceHandler(w http.ResponseWriter, r *http.Request
 
 func (h *AdminHandler) ReviewsHandler(w http.ResponseWriter, r *http.Request) {
 	reviews, _ := models.GetAllReviewsAdmin(h.DB)
-	tmpl, _ := template.New("reviews.html").Funcs(funcMap).ParseFS(templates.FS, "layout/admin_base.html", "admin/reviews.html")
+	tmpl, err := template.New("reviews.html").Funcs(funcMap).ParseFS(templates.FS, "layout/admin_base.html", "admin/reviews.html")
+	if err != nil {
+		http.Error(w, "Template Error", http.StatusInternalServerError)
+		return
+	}
 	data := map[string]interface{}{"Title": "Manage Reviews", "Reviews": reviews}
 	tmpl.ExecuteTemplate(w, "admin_base.html", data)
 }
