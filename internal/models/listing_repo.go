@@ -39,3 +39,24 @@ func SearchListings(db *sqlx.DB, query string, minPrice, maxPrice int) ([]Listin
 	err := db.Select(&listings, sqlStr, args...)
 	return listings, err
 }
+
+func GetAllListingsAdmin(db *sqlx.DB) ([]Listing, error) {
+	var listings []Listing
+	err := db.Select(&listings, "SELECT * FROM listings ORDER BY created_at DESC")
+	return listings, err
+}
+
+func UpdateListingAvailability(db *sqlx.DB, id int, isAvailable bool) error {
+	_, err := db.Exec("UPDATE listings SET is_available = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", isAvailable, id)
+	return err
+}
+
+func UpdateListingFeatured(db *sqlx.DB, id int, isFeatured bool) error {
+	_, err := db.Exec("UPDATE listings SET is_featured = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", isFeatured, id)
+	return err
+}
+
+func UpdateListingPrice(db *sqlx.DB, id int, price int) error {
+	_, err := db.Exec("UPDATE listings SET price_per_month = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", price, id)
+	return err
+}

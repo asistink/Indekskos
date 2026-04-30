@@ -1,0 +1,48 @@
+{{ define "content" }}
+<h2 class="text-2xl font-bold mb-6">Add / Edit Listing</h2>
+<div class="bg-white p-6 rounded-lg shadow max-w-3xl">
+    <form action="/admin/listings/save" method="POST" class="space-y-4">
+        <input type="hidden" name="id" value="{{ if .Listing }}{{ .Listing.ID }}{{ end }}">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Name</label>
+            <input type="text" name="name" value="{{ if .Listing }}{{ .Listing.Name }}{{ end }}" required class="w-full px-3 py-2 border rounded">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Area</label>
+                <input type="text" name="area" value="{{ if .Listing }}{{ .Listing.Area }}{{ end }}" required class="w-full px-3 py-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">University Nearby</label>
+                <input type="text" name="university_nearby" value="{{ if .Listing }}{{ if .Listing.UniversityNearby }}{{ .Listing.UniversityNearby }}{{ end }}{{ end }}" class="w-full px-3 py-2 border rounded">
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Address</label>
+            <textarea name="address" required class="w-full px-3 py-2 border rounded">{{ if .Listing }}{{ .Listing.Address }}{{ end }}</textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Price Per Month</label>
+                <input type="number" name="price_per_month" value="{{ if .Listing }}{{ .Listing.PricePerMonth }}{{ end }}" required class="w-full px-3 py-2 border rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">WhatsApp Number</label>
+                <input type="text" name="landlord_wa_number" value="{{ if .Listing }}{{ .Listing.LandlordWANumber }}{{ end }}" required class="w-full px-3 py-2 border rounded">
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Facilities (comma separated)</label>
+            <input type="text" name="facilities" placeholder="AC, WiFi, Kamar Mandi Dalam" class="w-full px-3 py-2 border rounded">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Thumbnail URL</label>
+            <input type="url" name="thumbnail_url" value="{{ if .Listing }}{{ if .Listing.ThumbnailURL }}{{ .Listing.ThumbnailURL }}{{ end }}{{ end }}" class="w-full px-3 py-2 border rounded">
+        </div>
+        <div class="pt-4 flex gap-4">
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Save Listing</button>
+            <a href="/admin/listings" class="bg-gray-300 text-gray-800 px-6 py-2 rounded hover:bg-gray-400">Cancel</a>
+        </div>
+    </form>
+</div>
+{{ end }}

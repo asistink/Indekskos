@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }} - Admin Indekskos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+</head>
+<body class="bg-gray-100 font-sans flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gray-800 text-white flex flex-col">
+        <div class="h-16 flex items-center justify-center border-b border-gray-700">
+            <h1 class="text-xl font-bold">Admin Panel</h1>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="/admin/dashboard" class="block px-4 py-2 rounded hover:bg-gray-700">Dashboard</a>
+            <a href="/admin/listings" class="block px-4 py-2 rounded hover:bg-gray-700">Manage Listings</a>
+            <a href="/admin/reviews" class="block px-4 py-2 rounded hover:bg-gray-700">Manage Reviews</a>
+        </nav>
+        <div class="p-4 border-t border-gray-700">
+            <a href="/admin/logout" class="block w-full text-center px-4 py-2 bg-red-600 rounded hover:bg-red-700">Logout</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-gray-50 p-8">
+        {{ template "content" . }}
+    </main>
+</body>
+</html>

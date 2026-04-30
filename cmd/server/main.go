@@ -7,11 +7,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 
 	"indekskos/internal/handlers"
+	"indekskos/internal/middlewares"
 )
 
 func main() {
@@ -42,6 +43,25 @@ func main() {
 	publicHandler := &handlers.PublicHandler{DB: db}
 	r.Get("/", publicHandler.HomeHandler)
 	r.Get("/search", publicHandler.SearchHandler)
+
+	adminHandler := &handlers.AdminHandler{DB: db}
+	r.Route("/admin", func(r chi.Router) {
+		r.Get("/login", adminHandler.LoginHandler)
+		r.Post("/login", adminHandler.LoginPostHandler)
+		r.Get("/logout", adminHandler.LogoutHandler)
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.RequireAdmin)
+			r.Get("/dashboard", adminHandler.DashboardHandler)
+			r.Get("/listings", adminHandler.ListingsHandler)
+			r.Put("/listings/{id}/availability", adminHandler.ToggleAvailabilityHandler)
+			r.Put("/listings/{id}/featured", adminHandler.ToggleFeaturedHandler)
+			r.Put("/listings/{id}/price", adminHandler.UpdatePriceHandler)
+			r.Get("/reviews", adminHandler.ReviewsHandler)
+			r.Put("/reviews/{id}/approve", adminHandler.ApproveReviewHandler)
+			r.Delete("/reviews/{id}", adminHandler.DeleteReviewHandler)
+		})
+	})
 
 	// Additional routes would go here
 	// r.Get("/kos/{id}", handlers.DetailHandler(db))

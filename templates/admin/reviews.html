@@ -1,0 +1,46 @@
+{{ define "content" }}
+<h2 class="text-2xl font-bold mb-6">Manage Reviews</h2>
+
+<div class="bg-white shadow rounded-lg overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase">Reviewer</th>
+                <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase">Rating</th>
+                <th class="px-6 py-3 text-left font-medium text-gray-500 uppercase">Comment</th>
+                <th class="px-6 py-3 text-center font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-6 py-3 text-center font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+            {{ range .Reviews }}
+            <tr id="review-{{ .ID }}" class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                    <div class="font-bold text-gray-900">{{ .ReviewerName }}</div>
+                    <div class="text-gray-500 text-xs">{{ if .ReviewerEmail }}{{ .ReviewerEmail }}{{ else }}-{{ end }}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="text-yellow-500 font-bold">{{ .Rating }} / 5</span>
+                </td>
+                <td class="px-6 py-4 max-w-md truncate">
+                    {{ if .Comment }}{{ .Comment }}{{ else }}-{{ end }}
+                </td>
+                <td id="status-{{ .ID }}" class="px-6 py-4 text-center">
+                    {{ if .IsApproved }}
+                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-bold">Approved</span>
+                    {{ else }}
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-bold">Pending</span>
+                    {{ end }}
+                </td>
+                <td class="px-6 py-4 text-center" id="actions-{{ .ID }}">
+                    {{ if not .IsApproved }}
+                    <button hx-put="/admin/reviews/{{ .ID }}/approve" hx-target="#status-{{ .ID }}" hx-swap="innerHTML" class="text-green-600 hover:text-green-900 mr-3 font-bold" onclick="this.remove()">Approve</button>
+                    {{ end }}
+                    <button hx-delete="/admin/reviews/{{ .ID }}" hx-target="#review-{{ .ID }}" hx-swap="outerHTML" hx-confirm="Reject and delete this review?" class="text-red-600 hover:text-red-900 font-bold">Reject</button>
+                </td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+</div>
+{{ end }}
