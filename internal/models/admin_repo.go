@@ -4,7 +4,7 @@ import "github.com/jmoiron/sqlx"
 
 func GetAdminByUsername(db *sqlx.DB, username string) (*Admin, error) {
 	var admin Admin
-	err := db.Get(&admin, "SELECT * FROM admins WHERE username = $1", username)
+	err := db.Get(&admin, "SELECT * FROM admins WHERE LOWER(username) = LOWER($1)", username)
 	if err != nil {
 		return nil, err
 	}

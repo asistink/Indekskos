@@ -21,6 +21,7 @@ type Listing struct {
 	LandlordWANumber     string         `db:"landlord_wa_number" json:"landlord_wa_number"`
 	IsFeatured           bool           `db:"is_featured" json:"is_featured"`
 	AverageRating        float64        `db:"average_rating" json:"average_rating"`
+	KosType              string         `db:"kos_type" json:"kos_type"`
 	GoogleMapsIframeURL  *string        `db:"google_maps_iframe_url" json:"google_maps_iframe_url"`
 	CreatedAt            time.Time      `db:"created_at" json:"created_at"`
 	UpdatedAt            time.Time      `db:"updated_at" json:"updated_at"`

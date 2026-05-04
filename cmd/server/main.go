@@ -40,15 +40,29 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	publicHandler := &handlers.PublicHandler{DB: db}
 	r.Get("/", publicHandler.HomeHandler)
 	r.Get("/search", publicHandler.SearchHandler)
+	r.Get("/kos/{id}", publicHandler.DetailHandler)
+	r.Get("/kos/{id}/reviews", publicHandler.GetReviewsHandler)
+	r.Post("/kos/{id}/reviews", publicHandler.PostReviewHandler)
 
 	adminHandler := &handlers.AdminHandler{DB: db}
 	r.Route("/admin", func(r chi.Router) {
-		r.Get("/login", adminHandler.LoginHandler)
 		r.Post("/login", adminHandler.LoginPostHandler)
-		r.Get("/logout", adminHandler.LogoutHandler)
 
 		r.Group(func(r chi.Router) {
 			r.Use(middlewares.RequireAdmin)
@@ -62,9 +76,6 @@ func main() {
 			r.Delete("/reviews/{id}", adminHandler.DeleteReviewHandler)
 		})
 	})
-
-	// Additional routes would go here
-	// r.Get("/kos/{id}", handlers.DetailHandler(db))
 
 	log.Printf("Starting server on port %s", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {

@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -15,7 +16,8 @@ func GetListingByID(db *sqlx.DB, id int) (*Listing, error) {
 	return &listing, nil
 }
 
-func SearchListings(db *sqlx.DB, query string, minPrice, maxPrice int) ([]Listing, error) {
+// SearchListings supports query, price range, kos_type filter, and facility filter.
+func SearchListings(db *sqlx.DB, query string, minPrice, maxPrice int, kosTypes []string, facilities []string) ([]Listing, error) {
 	var listings []Listing
 	searchQ := "%" + query + "%"
 
@@ -34,10 +36,49 @@ func SearchListings(db *sqlx.DB, query string, minPrice, maxPrice int) ([]Listin
 		argID++
 	}
 
+	// Filter by kos_type (e.g. ["putra","campur"])
+	if len(kosTypes) > 0 {
+		placeholders := make([]string, len(kosTypes))
+		for i, kt := range kosTypes {
+			placeholders[i] = fmt.Sprintf("$%d", argID)
+			args = append(args, kt)
+			argID++
+		}
+		sqlStr += " AND kos_type IN (" + strings.Join(placeholders, ",") + ")"
+	}
+
+	// Filter by facilities (all selected facilities must exist in the listing)
+	for _, fac := range facilities {
+		sqlStr += fmt.Sprintf(" AND $%d = ANY(facilities)", argID)
+		args = append(args, fac)
+		argID++
+	}
+
 	sqlStr += " ORDER BY is_featured DESC, created_at DESC LIMIT 50"
 
 	err := db.Select(&listings, sqlStr, args...)
 	return listings, err
+}
+
+// GetFeaturedListings returns listings marked as featured.
+func GetFeaturedListings(db *sqlx.DB) ([]Listing, error) {
+	var listings []Listing
+	err := db.Select(&listings, "SELECT * FROM listings WHERE is_featured = true ORDER BY created_at DESC LIMIT 10")
+	return listings, err
+}
+
+// GetNearbyListings returns listings in any area, ordered by rating.
+func GetNearbyListings(db *sqlx.DB) ([]Listing, error) {
+	var listings []Listing
+	err := db.Select(&listings, "SELECT * FROM listings WHERE is_available = true ORDER BY average_rating DESC LIMIT 20")
+	return listings, err
+}
+
+// GetDistinctAreas returns unique area names.
+func GetDistinctAreas(db *sqlx.DB) ([]string, error) {
+	var areas []string
+	err := db.Select(&areas, "SELECT DISTINCT area FROM listings ORDER BY area")
+	return areas, err
 }
 
 func GetAllListingsAdmin(db *sqlx.DB) ([]Listing, error) {

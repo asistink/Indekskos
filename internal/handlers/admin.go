@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"fmt"
-	"html/template"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"indekskos/internal/models"
-	"indekskos/templates"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
@@ -22,35 +20,28 @@ type AdminHandler struct {
 	DB *sqlx.DB
 }
 
-func (h *AdminHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFS(templates.FS, "layout/base.html", "admin/login.html")
-	if err != nil {
-		http.Error(w, "Template Error", http.StatusInternalServerError)
-		return
-	}
-	hasError := r.URL.Query().Get("error") != ""
-	data := map[string]interface{}{
-		"Title": "Admin Login",
-		"Error": hasError,
-	}
-	tmpl.ExecuteTemplate(w, "base.html", data)
-}
-
 func (h *AdminHandler) LoginPostHandler(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	password := r.FormValue("password")
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
 
-	admin, err := models.GetAdminByUsername(h.DB, username)
-	if err != nil {
-		log.Printf("Login error: GetAdminByUsername failed for %s: %v", username, err)
-		http.Redirect(w, r, "/admin/login?error=invalid", http.StatusSeeOther)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(password))
+	admin, err := models.GetAdminByUsername(h.DB, req.Username)
 	if err != nil {
-		log.Printf("Login error: Password mismatch for %s", username)
-		http.Redirect(w, r, "/admin/login?error=invalid", http.StatusSeeOther)
+		log.Printf("Login error: GetAdminByUsername failed for %s: %v", req.Username, err)
+		respondError(w, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(req.Password))
+	if err != nil {
+		log.Printf("Login error: Password mismatch for %s", req.Username)
+		respondError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
@@ -63,125 +54,117 @@ func (h *AdminHandler) LoginPostHandler(w http.ResponseWriter, r *http.Request) 
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		log.Printf("Login error: Failed to sign token: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		respondError(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
 
-	log.Printf("Login success: User %s logged in", username)
+	log.Printf("Login success: User %s logged in", req.Username)
 
-	isSecure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
-	http.SetCookie(w, &http.Cookie{
-		Name:     "admin_session",
-		Value:    tokenString,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   isSecure,
-		SameSite: http.SameSiteLaxMode,
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Login successful",
+		"token":   tokenString,
 	})
-
-	http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
-}
-
-func (h *AdminHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "admin_session",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		MaxAge:   -1,
-	})
-	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 }
 
 func (h *AdminHandler) DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	stats, err := models.GetAdminDashboardStats(h.DB)
 	if err != nil {
-		stats = &models.DashboardStats{}
-	}
-	tmpl, err := template.ParseFS(templates.FS, "layout/admin_base.html", "admin/dashboard.html")
-	if err != nil {
-		http.Error(w, "Template Error", http.StatusInternalServerError)
+		respondError(w, http.StatusInternalServerError, "Failed to get stats")
 		return
 	}
-	data := map[string]interface{}{"Title": "Dashboard", "Stats": stats}
-	tmpl.ExecuteTemplate(w, "admin_base.html", data)
+	respondJSON(w, http.StatusOK, map[string]interface{}{"data": stats})
 }
 
 func (h *AdminHandler) ListingsHandler(w http.ResponseWriter, r *http.Request) {
-	listings, _ := models.GetAllListingsAdmin(h.DB)
-	tmpl, err := template.New("listings.html").Funcs(funcMap).ParseFS(templates.FS, "layout/admin_base.html", "admin/listings.html")
+	listings, err := models.GetAllListingsAdmin(h.DB)
 	if err != nil {
-		http.Error(w, "Template Error", http.StatusInternalServerError)
+		respondError(w, http.StatusInternalServerError, "Failed to get listings")
 		return
 	}
-	data := map[string]interface{}{"Title": "Manage Listings", "Listings": listings}
-	tmpl.ExecuteTemplate(w, "admin_base.html", data)
+	if listings == nil {
+		listings = []models.Listing{}
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"data": listings})
 }
 
 func (h *AdminHandler) ToggleAvailabilityHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	listing, err := models.GetListingByID(h.DB, id)
 	if err != nil {
-		http.Error(w, "Not found", http.StatusNotFound)
+		respondError(w, http.StatusNotFound, "Listing not found")
 		return
 	}
 	newStatus := !listing.IsAvailable
-	models.UpdateListingAvailability(h.DB, id, newStatus)
-	
-	class := "bg-red-100 text-red-800"
-	text := "Full"
-	if newStatus {
-		class = "bg-green-100 text-green-800"
-		text = "Available"
+	err = models.UpdateListingAvailability(h.DB, id, newStatus)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to update")
+		return
 	}
-	fmt.Fprintf(w, `<button hx-put="/admin/listings/%d/availability" hx-swap="outerHTML" class="px-3 py-1 rounded-full text-xs font-bold %s">%s</button>`, id, class, text)
+	respondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "is_available": newStatus})
 }
 
 func (h *AdminHandler) ToggleFeaturedHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	listing, err := models.GetListingByID(h.DB, id)
 	if err != nil {
-		http.Error(w, "Not found", http.StatusNotFound)
+		respondError(w, http.StatusNotFound, "Listing not found")
 		return
 	}
 	newStatus := !listing.IsFeatured
-	models.UpdateListingFeatured(h.DB, id, newStatus)
-	
-	class := "bg-gray-100 text-gray-800"
-	text := "Normal"
-	if newStatus {
-		class = "bg-yellow-100 text-yellow-800"
-		text = "Featured"
+	err = models.UpdateListingFeatured(h.DB, id, newStatus)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to update")
+		return
 	}
-	fmt.Fprintf(w, `<button hx-put="/admin/listings/%d/featured" hx-swap="outerHTML" class="px-3 py-1 rounded-full text-xs font-bold %s">%s</button>`, id, class, text)
+	respondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "is_featured": newStatus})
 }
 
 func (h *AdminHandler) UpdatePriceHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	price, _ := strconv.Atoi(r.FormValue("price"))
-	models.UpdateListingPrice(h.DB, id, price)
-	w.WriteHeader(http.StatusOK)
+	var req struct {
+		Price int `json:"price"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	err := models.UpdateListingPrice(h.DB, id, req.Price)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to update")
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
 }
 
 func (h *AdminHandler) ReviewsHandler(w http.ResponseWriter, r *http.Request) {
-	reviews, _ := models.GetAllReviewsAdmin(h.DB)
-	tmpl, err := template.New("reviews.html").Funcs(funcMap).ParseFS(templates.FS, "layout/admin_base.html", "admin/reviews.html")
+	reviews, err := models.GetAllReviewsAdmin(h.DB)
 	if err != nil {
-		http.Error(w, "Template Error", http.StatusInternalServerError)
+		respondError(w, http.StatusInternalServerError, "Failed to get reviews")
 		return
 	}
-	data := map[string]interface{}{"Title": "Manage Reviews", "Reviews": reviews}
-	tmpl.ExecuteTemplate(w, "admin_base.html", data)
+	if reviews == nil {
+		reviews = []models.Review{}
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"data": reviews})
 }
 
 func (h *AdminHandler) ApproveReviewHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	models.ApproveReview(h.DB, id)
-	fmt.Fprint(w, `<span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-bold">Approved</span>`)
+	err := models.ApproveReview(h.DB, id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to approve")
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
 }
 
 func (h *AdminHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	models.DeleteReview(h.DB, id)
-	w.WriteHeader(http.StatusOK)
+	err := models.DeleteReview(h.DB, id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to delete")
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
 }
