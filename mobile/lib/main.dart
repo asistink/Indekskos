@@ -76,7 +76,27 @@ class _IndekskosAppState extends State<IndekskosApp> {
     if (_checkingLocation) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: Scaffold(backgroundColor: Colors.white, body: Center(child: CircularProgressIndicator(color: AppColors.primary))),
+        home: Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Logo aplikasi IndeksKos
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 180,
+                  height: 180,
+                ),
+                const SizedBox(height: 32),
+                CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 3,
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 

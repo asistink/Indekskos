@@ -32,60 +32,11 @@ class SelectLocationScreen extends StatelessWidget {
               ),
               const Spacer(flex: 2),
 
-              // Illustration
-              SizedBox(
+              // Logo IndeksKos
+              Image.asset(
+                'assets/images/logo.png',
+                width: 200,
                 height: 200,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Background circles
-                    Positioned(
-                      child: Container(
-                        width: 180, height: 180,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary.withAlpha(15),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      child: Container(
-                        width: 130, height: 130,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary.withAlpha(25),
-                        ),
-                      ),
-                    ),
-                    // Map icon
-                    Icon(Icons.map_rounded, size: 60, color: AppColors.primary.withAlpha(80)),
-                    // Location pin
-                    Positioned(
-                      bottom: 50,
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: AppColors.primary.withAlpha(60), blurRadius: 20, offset: const Offset(0, 8))],
-                        ),
-                        child: const Icon(Icons.location_on, color: Colors.white, size: 28),
-                      ),
-                    ),
-                    // Search icon
-                    Positioned(
-                      top: 20, left: 30,
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withAlpha(15), blurRadius: 8)]),
-                        child: Icon(Icons.search, color: AppColors.primary, size: 20),
-                      ),
-                    ),
-                    // Small decorations
-                    Positioned(top: 10, right: 40, child: Icon(Icons.auto_awesome, size: 20, color: AppColors.warning.withAlpha(180))),
-                    Positioned(bottom: 20, right: 20, child: Icon(Icons.auto_awesome, size: 16, color: AppColors.primary.withAlpha(100))),
-                  ],
-                ),
               ),
               const SizedBox(height: 40),
 

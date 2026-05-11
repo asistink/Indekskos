@@ -17,7 +17,6 @@ func main() {
 		log.Fatal("DATABASE_URL must be set")
 	}
 
-	// Koneksi ke Supabase membutuhkan sslmode di beberapa kasus, tapi kita coba langsung dulu
 	db, err := sqlx.Connect("pgx", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)

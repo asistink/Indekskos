@@ -296,7 +296,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     Row(children: [
                       Text('Ulasan (${_reviews.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       const Spacer(),
-                      GestureDetector(onTap: _showReviewDialog, child: const Text('See all', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13))),
+                      GestureDetector(onTap: _showReviewDialog, child: const Text('Tulis Ulasan', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13))),
                     ]),
                     const SizedBox(height: 12),
                     if (_reviews.isEmpty)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../utils/constants.dart';
 
 class FilterBottomSheet extends StatefulWidget {
@@ -25,6 +26,13 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   late List<String> _kosTypes;
   late RangeValues _priceRange;
   late List<String> _facilities;
+
+  /// Format angka ke format mata uang Indonesia (Rp300.000)
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp',
+    decimalDigits: 0,
+  );
 
   final List<String> _allKosTypes = ['putra', 'putri', 'campur'];
   final List<Map<String, dynamic>> _allFacilities = [
@@ -109,16 +117,16 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               divisions: 47,
               activeColor: AppColors.primary,
               labels: RangeLabels(
-                'Rp${(_priceRange.start / 1000).toStringAsFixed(0)}rb',
-                'Rp${(_priceRange.end / 1000000).toStringAsFixed(1)}jt',
+                _currencyFormat.format(_priceRange.start.toInt()),
+                _currencyFormat.format(_priceRange.end.toInt()),
               ),
               onChanged: (values) => setState(() => _priceRange = values),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Rp${(_priceRange.start / 1000).toStringAsFixed(0)}.000', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                Text('Rp${(_priceRange.end / 1000000).toStringAsFixed(1)}.000.000', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                Text(_currencyFormat.format(_priceRange.start.toInt()), style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                Text(_currencyFormat.format(_priceRange.end.toInt()), style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
               ],
             ),
             const SizedBox(height: 20),
