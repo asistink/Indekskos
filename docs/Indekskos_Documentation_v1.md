@@ -37,7 +37,7 @@ Indekskos adalah platform pencarian kos yang menargetkan mahasiswa di Yogyakarta
 ## 1.3 Asumsi dan Kendala
 - **Kendala Hosting:** Menggunakan 100% layanan free-tier (Supabase/Neon untuk DB, Render/Koyeb/Fly.io untuk PaaS).
 - **Strategi Monetisasi:** Melalui "Featured Listing Fees" dari pemilik kos, bukan komisi transaksi.
-- **Tumpukan Teknologi (Tech Stack):** Go (Golang), PostgreSQL, HTMX, Tailwind CSS.
+- **Tumpukan Teknologi (Tech Stack):** Frontend Mobile (Flutter), Backend API Go (Golang), PostgreSQL.
 
 ---
 
@@ -67,7 +67,7 @@ Menjadi platform pencarian kos paling transparan dan terpercaya di Yogyakarta de
 1. **Sistem Pencarian dan Filter (Public):**
    - Mendukung pencarian teks pada area dan nama universitas.
    - Filter harga minimum dan maksimum.
-   - Filter fasilitas menggunakan checklist (menggunakan HTMX untuk dynamic reload).
+   - Filter fasilitas menggunakan checklist (menggunakan HTTP REST API untuk update state di Mobile UI).
 2. **Detail Properti:**
    - Menampilkan Thumbnail, Carousel Foto, Harga, Deskripsi, Fasilitas.
    - Mengintegrasikan iframe Google Maps.
@@ -80,12 +80,12 @@ Menjadi platform pencarian kos paling transparan dan terpercaya di Yogyakarta de
 
 ## 3.2 Kebutuhan Non-Fungsional
 1. **Keamanan:** Form input akan dilindungi dari SQL Injection (melalui parameterized queries/ORM) dan XSS (melalui html/template escaping bawaan Go). Password Admin di-hash menggunakan algoritma Bcrypt.
-2. **Kinerja:** Waktu muat halaman cepat dengan meminimalkan ukuran file dan menggunakan SSR (Server-Side Rendering) digabung dengan HTMX.
+2. **Kinerja:** Waktu respon API cepat dengan meminimalkan payload JSON.
 3. **Penyebaran (Deployment):** Aplikasi harus 12-Factor App compliant, mendengarkan pada port yang diberikan oleh *environment variable* `PORT` dan database URL melalui `DATABASE_URL`.
 
 ## 3.3 Arsitektur Sistem
-- **Pola Desain:** Monolith Architecture.
-- **Frontend:** Server-Rendered HTML Templates dengan Tailwind CSS untuk styling dan HTMX untuk interaksi SPA-like.
+- **Pola Desain:** Client-Server Architecture (Mobile App & REST API).
+- **Frontend:** Aplikasi Native Mobile menggunakan framework Flutter.
 - **Backend:** Go dengan library standar `net/http` atau `go-chi`.
 - **Database:** PostgreSQL.
 
@@ -99,7 +99,7 @@ Sesuai rancangan skrip DDL yang diberikan:
 
 # GLOSARIUM
 - **MVP:** Minimum Viable Product.
-- **HTMX:** Library JavaScript yang memungkinkan akses fungsionalitas AJAX langsung pada HTML.
+- **Flutter:** UI toolkit open-source oleh Google untuk membangun aplikasi secara native.
 - **PaaS:** Platform as a Service.
 - **CRUD:** Create, Read, Update, Delete.
 
@@ -108,4 +108,4 @@ Sesuai rancangan skrip DDL yang diberikan:
 # REFERENSI
 - IEEE 830-1998 Standar Rekomendasi Praktik untuk Spesifikasi Kebutuhan Perangkat Lunak.
 - Dokumentasi Go: https://go.dev/doc/
-- Dokumentasi HTMX: https://htmx.org/docs/
+- Dokumentasi Flutter: https://docs.flutter.dev/
