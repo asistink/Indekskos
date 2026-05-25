@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 import '../models/listing.dart';
 import '../models/review.dart';
 import '../services/api_service.dart';
@@ -21,6 +22,7 @@ class _DetailScreenState extends State<DetailScreen> {
   bool _isLoading = true;
   int _selectedPhotoIndex = 0;
   bool _descExpanded = false;
+  VideoPlayerController? _videoController;
 
   @override
   void initState() {
@@ -35,10 +37,24 @@ class _DetailScreenState extends State<DetailScreen> {
         _listing = data['listing'];
         _reviews = data['reviews'];
         _isLoading = false;
+        
+        if (_listing?.videoUrl != null && _listing!.videoUrl!.isNotEmpty) {
+          final url = '${ApiConstants.baseUrl}${_listing!.videoUrl}';
+          _videoController = VideoPlayerController.networkUrl(Uri.parse(url))
+            ..initialize().then((_) {
+              setState(() {});
+            });
+        }
       });
     } catch (e) {
       setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
   }
 
   Future<void> _launchWa(String number) async {
@@ -178,6 +194,17 @@ class _DetailScreenState extends State<DetailScreen> {
                       Text(l.averageRating > 0 ? l.averageRating.toStringAsFixed(1) : '-', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       Text(' (${_reviews.length} ulasan)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ]),
+                    
+                    if (l.isVideoVerified) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.verified, color: AppColors.primary, size: 16),
+                          const SizedBox(width: 4),
+                          Text('Real-View Verified', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                        ],
+                      )
+                    ],
                     const SizedBox(height: 12),
 
                     // === NAME ===
@@ -192,7 +219,69 @@ class _DetailScreenState extends State<DetailScreen> {
                       Text(fmt.format(l.pricePerMonth), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 15)),
                       Text('/bln', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                     ]),
+                    
+                    if (l.targetCampus != null && l.motorDistanceMinutes != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.two_wheeler, size: 14, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Text('${l.motorDistanceMinutes} menit ke ${l.targetCampus}', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ],
+
+                    if (l.lastConfirmedAt == null || DateTime.now().difference(l.lastConfirmedAt!).inDays > 3) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(color: AppColors.warning.withAlpha(20), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.warning.withAlpha(100))),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text('Status ketersediaan kos ini belum dikonfirmasi oleh pemilik baru-baru ini.', style: TextStyle(color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.w600))),
+                          ],
+                        ),
+                      )
+                    ],
+
                     const SizedBox(height: 20),
+
+                    // === VIDEO WALKTHROUGH ===
+                    if (_videoController != null && _videoController!.value.isInitialized) ...[
+                      const Text('Unfiltered 30s Walkthrough', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          color: Colors.black,
+                          height: 200,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              AspectRatio(
+                                aspectRatio: _videoController!.value.aspectRatio,
+                                child: VideoPlayer(_videoController!),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _videoController!.value.isPlaying ? _videoController!.pause() : _videoController!.play();
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(color: Colors.black.withAlpha(100), shape: BoxShape.circle),
+                                  padding: const EdgeInsets.all(12),
+                                  child: Icon(_videoController!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 36),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // === TENTANG KOS INI ===
                     const Text('Tentang Kos Ini', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

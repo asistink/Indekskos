@@ -7,7 +7,9 @@ class FilterBottomSheet extends StatefulWidget {
   final double minPrice;
   final double maxPrice;
   final List<String> selectedFacilities;
-  final Function(List<String> kosTypes, double minPrice, double maxPrice, List<String> facilities) onApply;
+  final String? targetCampus;
+  final double? motorDistanceMinutes;
+  final Function(List<String> kosTypes, double minPrice, double maxPrice, List<String> facilities, String? targetCampus, double? motorDistanceMinutes) onApply;
 
   const FilterBottomSheet({
     super.key,
@@ -15,6 +17,8 @@ class FilterBottomSheet extends StatefulWidget {
     required this.minPrice,
     required this.maxPrice,
     required this.selectedFacilities,
+    this.targetCampus,
+    this.motorDistanceMinutes,
     required this.onApply,
   });
 
@@ -26,6 +30,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   late List<String> _kosTypes;
   late RangeValues _priceRange;
   late List<String> _facilities;
+  final TextEditingController _campusController = TextEditingController();
+  double _motorDistance = 15; // default 15 mins
 
   /// Format angka ke format mata uang Indonesia (Rp300.000)
   final _currencyFormat = NumberFormat.currency(
@@ -52,6 +58,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     _kosTypes = List.from(widget.selectedKosTypes);
     _priceRange = RangeValues(widget.minPrice, widget.maxPrice);
     _facilities = List.from(widget.selectedFacilities);
+    if (widget.targetCampus != null) {
+      _campusController.text = widget.targetCampus!;
+    }
+    _motorDistance = widget.motorDistanceMinutes ?? 15;
   }
 
   void _reset() {
@@ -59,6 +69,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       _kosTypes = [];
       _priceRange = const RangeValues(300000, 5000000);
       _facilities = [];
+      _campusController.clear();
+      _motorDistance = 15;
     });
   }
 
@@ -167,6 +179,37 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: 24),
+
+            // Hyper-Local Filter
+            const Text('Hyper-Local (Jarak ke Kampus)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _campusController,
+              decoration: InputDecoration(
+                hintText: 'Target Kampus (misal: UGM, UNY)',
+                prefixIcon: const Icon(Icons.school_outlined),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Maksimal Waktu Tempuh Motor', style: TextStyle(fontSize: 14)),
+                Text('${_motorDistance.toInt()} Menit', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            Slider(
+              value: _motorDistance,
+              min: 1,
+              max: 60,
+              divisions: 59,
+              activeColor: AppColors.primary,
+              label: '${_motorDistance.toInt()} Menit',
+              onChanged: (val) => setState(() => _motorDistance = val),
+            ),
             const SizedBox(height: 28),
 
             // Buttons
@@ -187,7 +230,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   flex: 2,
                   child: ElevatedButton(
                     onPressed: () {
-                      widget.onApply(_kosTypes, _priceRange.start, _priceRange.end, _facilities);
+                      String? campus = _campusController.text.trim();
+                      if (campus.isEmpty) campus = null;
+                      widget.onApply(_kosTypes, _priceRange.start, _priceRange.end, _facilities, campus, campus != null ? _motorDistance : null);
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(

@@ -59,6 +59,12 @@ func main() {
 	r.Get("/kos/{id}", publicHandler.DetailHandler)
 	r.Get("/kos/{id}/reviews", publicHandler.GetReviewsHandler)
 	r.Post("/kos/{id}/reviews", publicHandler.PostReviewHandler)
+	r.Get("/confirm-availability", publicHandler.ConfirmAvailabilityHandler)
+
+	// Serve static files for uploads
+	workDir, _ := os.Getwd()
+	filesDir := http.Dir(workDir + "/uploads")
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(filesDir)))
 
 	adminHandler := &handlers.AdminHandler{DB: db}
 	r.Route("/admin", func(r chi.Router) {
@@ -74,6 +80,7 @@ func main() {
 			r.Get("/reviews", adminHandler.ReviewsHandler)
 			r.Put("/reviews/{id}/approve", adminHandler.ApproveReviewHandler)
 			r.Delete("/reviews/{id}", adminHandler.DeleteReviewHandler)
+			r.Post("/listings/{id}/video", adminHandler.UploadVideoHandler)
 		})
 	})
 

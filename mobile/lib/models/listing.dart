@@ -15,6 +15,13 @@ class Listing {
   final double averageRating;
   final String kosType;
   final String? googleMapsIframeUrl;
+  
+  // USP Features
+  final String? videoUrl;
+  final bool isVideoVerified;
+  final DateTime? lastConfirmedAt;
+  final String? targetCampus;
+  final int? motorDistanceMinutes;
 
   Listing({
     required this.id,
@@ -33,6 +40,11 @@ class Listing {
     required this.averageRating,
     required this.kosType,
     this.googleMapsIframeUrl,
+    this.videoUrl,
+    this.isVideoVerified = false,
+    this.lastConfirmedAt,
+    this.targetCampus,
+    this.motorDistanceMinutes,
   });
 
   factory Listing.fromJson(Map<String, dynamic> json) {
@@ -53,6 +65,11 @@ class Listing {
       averageRating: (json['average_rating'] ?? 0).toDouble(),
       kosType: json['kos_type'] ?? 'campur',
       googleMapsIframeUrl: json['google_maps_iframe_url'],
+      videoUrl: json['video_url'],
+      isVideoVerified: json['is_video_verified'] ?? false,
+      lastConfirmedAt: json['last_confirmed_at'] != null ? DateTime.parse(json['last_confirmed_at']) : null,
+      targetCampus: json['target_campus'],
+      motorDistanceMinutes: json['motor_distance_minutes'],
     );
   }
 }

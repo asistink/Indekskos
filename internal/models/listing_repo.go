@@ -21,7 +21,7 @@ func SearchListings(db *sqlx.DB, query string, minPrice, maxPrice int, kosTypes 
 	var listings []Listing
 	searchQ := "%" + query + "%"
 
-	sqlStr := "SELECT * FROM listings WHERE (name ILIKE $1 OR area ILIKE $1 OR university_nearby ILIKE $1)"
+	sqlStr := "SELECT * FROM listings WHERE (name ILIKE $1 OR area ILIKE $1 OR university_nearby ILIKE $1 OR target_campus ILIKE $1)"
 	args := []interface{}{searchQ}
 	argID := 2
 
@@ -54,7 +54,9 @@ func SearchListings(db *sqlx.DB, query string, minPrice, maxPrice int, kosTypes 
 		argID++
 	}
 
-	sqlStr += " ORDER BY is_featured DESC, created_at DESC LIMIT 50"
+	// USP Ghosting-Free: prioritize listings confirmed within the last 3 days
+	// They will be sorted first, followed by featured, then by created_at
+	sqlStr += " ORDER BY CASE WHEN last_confirmed_at >= NOW() - INTERVAL '3 days' THEN 1 ELSE 0 END DESC, is_featured DESC, created_at DESC LIMIT 50"
 
 	err := db.Select(&listings, sqlStr, args...)
 	return listings, err
@@ -100,4 +102,19 @@ func UpdateListingFeatured(db *sqlx.DB, id int, isFeatured bool) error {
 func UpdateListingPrice(db *sqlx.DB, id int, price int) error {
 	_, err := db.Exec("UPDATE listings SET price_per_month = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", price, id)
 	return err
+}
+
+func ConfirmAvailability(db *sqlx.DB, token string) error {
+	res, err := db.Exec("UPDATE listings SET last_confirmed_at = CURRENT_TIMESTAMP WHERE confirmation_token = $1", token)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("invalid token or listing not found")
+	}
+	return nil
 }

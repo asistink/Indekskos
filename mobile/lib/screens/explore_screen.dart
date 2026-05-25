@@ -26,6 +26,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
   double _filterMinPrice = 300000;
   double _filterMaxPrice = 5000000;
   List<String> _filterFacilities = [];
+  String? _filterTargetCampus;
+  double? _filterMotorDistance;
 
   Future<void> _doSearch() async {
     setState(() { _isLoading = true; _hasSearched = true; });
@@ -36,6 +38,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
         maxPrice: _filterMaxPrice.toInt(),
         kosTypes: _filterKosTypes,
         facilities: _filterFacilities,
+        targetCampus: _filterTargetCampus,
+        motorDistanceMinutes: _filterMotorDistance,
       );
       setState(() { _results = results; _isLoading = false; });
     } catch (e) {
@@ -53,12 +57,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
         minPrice: _filterMinPrice,
         maxPrice: _filterMaxPrice,
         selectedFacilities: _filterFacilities,
-        onApply: (kosTypes, minPrice, maxPrice, facilities) {
+        targetCampus: _filterTargetCampus,
+        motorDistanceMinutes: _filterMotorDistance,
+        onApply: (kosTypes, minPrice, maxPrice, facilities, targetCampus, motorDistanceMinutes) {
           setState(() {
             _filterKosTypes = kosTypes;
             _filterMinPrice = minPrice;
             _filterMaxPrice = maxPrice;
             _filterFacilities = facilities;
+            _filterTargetCampus = targetCampus;
+            _filterMotorDistance = motorDistanceMinutes;
           });
           _doSearch();
         },

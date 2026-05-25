@@ -10,6 +10,10 @@ import (
 
 	"indekskos/internal/models"
 
+	"fmt"
+	"io"
+	"path/filepath"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jmoiron/sqlx"
@@ -167,4 +171,55 @@ func (h *AdminHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+}
+
+func (h *AdminHandler) UploadVideoHandler(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+
+	// Parse multipart form
+	err := r.ParseMultipartForm(50 << 20) // 50MB max memory
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "File too large or invalid request")
+		return
+	}
+
+	file, handler, err := r.FormFile("video")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "No video file found")
+		return
+	}
+	defer file.Close()
+
+	// Ensure uploads directory exists
+	os.MkdirAll("uploads", os.ModePerm)
+
+	// Save file locally
+	filename := fmt.Sprintf("kos_%d_%d%s", id, time.Now().Unix(), filepath.Ext(handler.Filename))
+	dstPath := filepath.Join("uploads", filename)
+
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to save file")
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to write file")
+		return
+	}
+
+	// Build public URL (assuming local /uploads endpoint)
+	videoURL := fmt.Sprintf("/uploads/%s", filename)
+
+	err = models.UpdateListingVideo(h.DB, id, videoURL)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to update database")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"success":   true,
+		"video_url": videoURL,
+	})
 }

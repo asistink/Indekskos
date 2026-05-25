@@ -17,5 +17,5 @@ class AppColors {
 class ApiConstants {
   // Replace with actual local IP or production URL.
   // For Android emulator pointing to local host use 10.0.2.2. For iOS emulator use 127.0.0.1.
-  static const String baseUrl = 'http://127.0.0.1:8080'; 
+  static const String baseUrl = 'http://192.168.1.38:8080'; // Updated to local network IP
 }

@@ -28,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   double _filterMinPrice = 300000;
   double _filterMaxPrice = 5000000;
   List<String> _filterFacilities = [];
+  String? _filterTargetCampus;
+  double? _filterMotorDistance;
 
   @override
   void initState() {
@@ -47,6 +49,15 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            duration: const Duration(seconds: 10),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -60,12 +71,16 @@ class _HomeScreenState extends State<HomeScreen> {
         minPrice: _filterMinPrice,
         maxPrice: _filterMaxPrice,
         selectedFacilities: _filterFacilities,
-        onApply: (kosTypes, minPrice, maxPrice, facilities) {
+        targetCampus: _filterTargetCampus,
+        motorDistanceMinutes: _filterMotorDistance,
+        onApply: (kosTypes, minPrice, maxPrice, facilities, targetCampus, motorDistanceMinutes) {
           setState(() {
             _filterKosTypes = kosTypes;
             _filterMinPrice = minPrice;
             _filterMaxPrice = maxPrice;
             _filterFacilities = facilities;
+            _filterTargetCampus = targetCampus;
+            _filterMotorDistance = motorDistanceMinutes;
           });
           _doSearch();
         },
@@ -82,6 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
         maxPrice: _filterMaxPrice.toInt(),
         kosTypes: _filterKosTypes,
         facilities: _filterFacilities,
+        targetCampus: _filterTargetCampus,
+        motorDistanceMinutes: _filterMotorDistance,
       );
       setState(() {
         _nearby = results;

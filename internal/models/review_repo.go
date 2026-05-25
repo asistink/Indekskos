@@ -8,14 +8,12 @@ func GetAllReviewsAdmin(db *sqlx.DB) ([]Review, error) {
 	return reviews, err
 }
 
-// GetApprovedReviewsByListingID returns only approved reviews for a specific listing.
 func GetApprovedReviewsByListingID(db *sqlx.DB, listingID int) ([]Review, error) {
 	var reviews []Review
 	err := db.Select(&reviews, "SELECT * FROM reviews WHERE listing_id = $1 AND is_approved = true ORDER BY created_at DESC", listingID)
 	return reviews, err
 }
 
-// CreateReview inserts a new review (pending approval by default).
 func CreateReview(db *sqlx.DB, review *Review) error {
 	_, err := db.Exec(
 		"INSERT INTO reviews (listing_id, reviewer_name, reviewer_email, rating, comment, is_approved) VALUES ($1, $2, $3, $4, $5, false)",

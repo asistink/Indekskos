@@ -31,3 +31,8 @@ func GetAdminDashboardStats(db *sqlx.DB) (*DashboardStats, error) {
 	}
 	return &stats, nil
 }
+
+func UpdateListingVideo(db *sqlx.DB, id int, videoURL string) error {
+	_, err := db.Exec("UPDATE listings SET video_url = $1, is_video_verified = true WHERE id = $2", videoURL, id)
+	return err
+}

@@ -25,4 +25,12 @@ type Listing struct {
 	GoogleMapsIframeURL  *string        `db:"google_maps_iframe_url" json:"google_maps_iframe_url"`
 	CreatedAt            time.Time      `db:"created_at" json:"created_at"`
 	UpdatedAt            time.Time      `db:"updated_at" json:"updated_at"`
+
+	// USP Features
+	VideoURL             *string        `db:"video_url" json:"video_url"`
+	IsVideoVerified      bool           `db:"is_video_verified" json:"is_video_verified"`
+	LastConfirmedAt      time.Time      `db:"last_confirmed_at" json:"last_confirmed_at"`
+	ConfirmationToken    *string        `db:"confirmation_token" json:"confirmation_token"`
+	TargetCampus         *string        `db:"target_campus" json:"target_campus"`
+	MotorDistanceMinutes *int           `db:"motor_distance_minutes" json:"motor_distance_minutes"`
 }

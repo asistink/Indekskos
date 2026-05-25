@@ -167,3 +167,22 @@ func (h *PublicHandler) PostReviewHandler(w http.ResponseWriter, r *http.Request
 		"message": "Review submitted successfully. Awaiting approval.",
 	})
 }
+
+// ConfirmAvailabilityHandler updates last_confirmed_at using a secret token
+func (h *PublicHandler) ConfirmAvailabilityHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		respondError(w, http.StatusBadRequest, "Token is required")
+		return
+	}
+
+	err := models.ConfirmAvailability(h.DB, token)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid or expired token")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Availability confirmed successfully",
+	})
+}

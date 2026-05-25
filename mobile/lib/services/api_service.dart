@@ -27,6 +27,8 @@ class ApiService {
     int maxPrice = 0,
     List<String> kosTypes = const [],
     List<String> facilities = const [],
+    String? targetCampus,
+    double? motorDistanceMinutes,
   }) async {
     final params = <String, String>{};
     if (query.isNotEmpty) params['q'] = query;
@@ -34,6 +36,8 @@ class ApiService {
     if (maxPrice > 0) params['max_price'] = maxPrice.toString();
     if (kosTypes.isNotEmpty) params['kos_type'] = kosTypes.join(',');
     if (facilities.isNotEmpty) params['facilities'] = facilities.join(',');
+    if (targetCampus != null && targetCampus.isNotEmpty) params['target_campus'] = targetCampus;
+    if (motorDistanceMinutes != null) params['motor_distance'] = motorDistanceMinutes.toInt().toString();
 
     final uri = Uri.parse('${ApiConstants.baseUrl}/search').replace(queryParameters: params);
     final response = await http.get(uri);
